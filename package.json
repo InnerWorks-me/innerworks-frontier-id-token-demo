@@ -1,0 +1,21 @@
+{
+    "name": "wallet-api-test",
+    "version": "1.0.0",
+    "description": "Simple page to test the Fr0ntierX Wallet API",
+    "author": "Fr0ntierX Inc.",
+    "license": "MIT",
+    "scripts": {
+        "build": "next build",
+        "dev": "next dev",
+        "start": "next start"
+    },
+    "dependencies": {
+        "next": "latest",
+        "next-auth": "^4.23.2",
+        "react": "18.2.0",
+        "react-dom": "18.2.0"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}
