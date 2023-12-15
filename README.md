@@ -1,12 +1,10 @@
-# Fr0ntierX Wallet API Test
+# ID Token Demo
 
-This is a simple Next.js app that will help you generate an OIDC from Google in order to try out the Fr0ntierX Wallet API.
+This is a simple Next.js app that will help you generate an ID token from Google in order to try out the Fr0ntierX Wallet API. You can access the app at [https://id-token-demo.fr0ntierx.xyz](https://id-token-demo.fr0ntierx.xyz) or run the app yourself.
 
 ## Setting up Sign in with Google
 
 You will need to setup Sign in with Google before you can start the app. You can create a new Google OAuth client following this guide: [https://support.google.com/cloud/answer/6158849?hl=en](https://support.google.com/cloud/answer/6158849?hl=en).
-
-Since this app is meant to only be run locally, configure `localhost:3000` as an authorized domain.
 
 After you have created the OAuth client, you will need to add the client ID and client secret to the `.env.local` file. You can copy the `.env.local.example` file and fill in the values.
 
