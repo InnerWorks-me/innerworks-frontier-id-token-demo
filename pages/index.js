@@ -1,8 +1,60 @@
-import { useSession, signIn, signOut } from "next-auth/react";
-import Head from "next/head";
+"use client";
 
-export default function Component() {
-    const { data: session } = useSession();
+import Head from "next/head";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import axios from "axios";
+
+export default function Home() {
+    const router = useRouter();
+
+    const [codeVerifier, setCodeVerifier] = useState(undefined);
+    const [idToken, setIdToken] = useState("");
+
+    // Fetch ID token from local storage
+    useEffect(() => {
+        setIdToken(localStorage.getItem("id_token") || "");
+    }, []);
+
+    // Create the code verifier
+    useEffect(() => {
+        const codeVerifierFromSession = sessionStorage.getItem("code_verifier");
+
+        if (codeVerifierFromSession) {
+            setCodeVerifier(codeVerifierFromSession);
+            return;
+        }
+
+        const codeVerifierValue = Math.random().toString(36).slice(-8);
+
+        sessionStorage.setItem("code_verifier", codeVerifierValue);
+        setCodeVerifier(codeVerifierValue);
+    }, []);
+
+    // Exchange auth code for ID token
+    useEffect(() => {
+        (async () => {
+            if (router.isReady && router.query.code && !idToken) {
+                const code = router.query.code;
+
+                const params = new URLSearchParams();
+                params.append("code", code);
+                params.append("client_id", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+                params.append("client_secret", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET);
+                params.append("redirect_uri", window.location.origin);
+                params.append("grant_type", "authorization_code");
+                params.append("code_verifier", codeVerifier);
+
+                const { data } = await axios.post("https://oauth2.googleapis.com/token", params);
+
+                router.replace("/", undefined, { shallow: true });
+
+                setIdToken(data.id_token);
+                localStorage.setItem("id_token", data.id_token);
+                localStorage.setItem("refresh_token", data.refresh_token);
+            }
+        })();
+    }, [router]);
 
     return (
         <div
@@ -22,14 +74,10 @@ export default function Component() {
                 token.
             </p>
 
-            {session ? (
+            {idToken ? (
                 <>
                     <div>
                         <h2 style={{ textAlign: "center" }}>ID Token</h2>
-
-                        <div style={{ margin: "16px 0px", fontSize: "16px" }}>
-                            Signed in as <b>{session.user.email}</b>
-                        </div>
 
                         <div
                             style={{
@@ -43,11 +91,11 @@ export default function Component() {
                                 fontSize: "16px",
                             }}
                         >
-                            {session.idToken}
+                            {idToken}
                         </div>
                         <button
                             style={{ display: "block", margin: "16px auto", fontSize: "16px" }}
-                            onClick={() => navigator.clipboard.writeText(session.idToken)}
+                            onClick={() => navigator.clipboard.writeText(idToken)}
                         >
                             Copy to Clipboard
                         </button>
@@ -56,7 +104,10 @@ export default function Component() {
                     <div>
                         <button
                             style={{ fontSize: "24px", display: "block", margin: "64px auto", padding: "8px 32px" }}
-                            onClick={() => signOut()}
+                            onClick={() => {
+                                localStorage.clear();
+                                window.location.reload();
+                            }}
                         >
                             Sign out
                         </button>
@@ -65,18 +116,24 @@ export default function Component() {
             ) : (
                 <>
                     <div>
-                        <button
+                        <a
                             style={{
                                 width: "300px",
                                 margin: "100px auto",
                                 display: "block",
                                 fontSize: "24px",
-                                padding: "8px 32px",
+                                padding: "12px 32px",
+                                background: "#eee",
+                                textAlign: "center",
                             }}
-                            onClick={() => signIn()}
+                            href={`https://accounts.google.com/o/oauth2/v2/auth?client_id=${
+                                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+                            }&redirect_uri=${
+                                typeof window !== "undefined" ? window.location.origin : ""
+                            }&response_type=code&scope=openid%20email&state=1234567890&access_type=offline&code_challenge=${codeVerifier}&code_challenge_method=plain`}
                         >
                             Sign in with Google
-                        </button>
+                        </a>
                     </div>
                 </>
             )}
