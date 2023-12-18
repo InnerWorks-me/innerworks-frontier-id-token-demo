@@ -10,6 +10,7 @@ export default function Home() {
 
     const [codeVerifier, setCodeVerifier] = useState(undefined);
     const [idToken, setIdToken] = useState("");
+    const [walletData, setWalletData] = useState({});
 
     // Fetch ID token from local storage
     useEffect(() => {
@@ -56,6 +57,25 @@ export default function Home() {
         })();
     }, [router]);
 
+    // Sample wallet API call
+    useEffect(() => {
+        (async () => {
+            if (idToken) {
+                const { data } = await axios.post(
+                    process.env.NEXT_PUBLIC_WALLET_API_URL,
+                    {},
+                    {
+                        headers: {
+                            authorization: `Bearer ${idToken}`,
+                            ["x-api-key"]: process.env.NEXT_PUBLIC_WALLET_API_KEY,
+                        },
+                    }
+                );
+                setWalletData(data.success);
+            }
+        })();
+    }, [idToken]);
+
     return (
         <div
             style={{
@@ -78,6 +98,12 @@ export default function Home() {
                 <>
                     <div>
                         <h2 style={{ textAlign: "center" }}>ID Token</h2>
+
+                        <div style={{ margin: "20px 0px" }}>
+                            Signed in as <b>{walletData.email}</b> <br />
+                            Ethereum address{" "}
+                            <b style={{ fontFamily: "monospace", fontSize: "15px" }}>{walletData.address}</b>
+                        </div>
 
                         <div
                             style={{
