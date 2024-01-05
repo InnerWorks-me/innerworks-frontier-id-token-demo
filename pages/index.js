@@ -62,7 +62,7 @@ export default function Home() {
         (async () => {
             if (idToken) {
                 const { data } = await axios.post(
-                    process.env.NEXT_PUBLIC_WALLET_API_URL,
+                    `${process.env.NEXT_PUBLIC_WALLET_API_URL}/account`,
                     {},
                     {
                         headers: {
@@ -71,7 +71,7 @@ export default function Home() {
                         },
                     }
                 );
-                setWalletData(data.success);
+                setWalletData(data);
             }
         })();
     }, [idToken]);
@@ -100,9 +100,9 @@ export default function Home() {
                         <h2 style={{ textAlign: "center" }}>ID Token</h2>
 
                         <div style={{ margin: "20px 0px" }}>
-                            Signed in as <b>{walletData.email}</b> <br />
+                            Signed in as <b>{walletData.userIdentifier}</b> <br />
                             Ethereum address{" "}
-                            <b style={{ fontFamily: "monospace", fontSize: "15px" }}>{walletData.address}</b>
+                            <b style={{ fontFamily: "monospace", fontSize: "15px" }}>{walletData.ethereumAddress}</b>
                         </div>
 
                         <div
