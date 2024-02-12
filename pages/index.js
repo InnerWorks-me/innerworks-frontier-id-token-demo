@@ -206,20 +206,6 @@ export default function Home() {
           </div>
         </>
       )}
-      {/* Position the footer sticky at the bottom of the page using css only */}
-      <footer
-        style={{
-          position: "absolute",
-          bottom: "0",
-          left: "0",
-          margin: "8px auto",
-          width: "100%",
-          textAlign: "center",
-          fontSize: "12px",
-          color: "#ccc",
-        }}>
-        <a href="/privacy">Privacy Policy</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="/terms">Terms & Conditions</a>
-      </footer>
     </div>
   );
 }
