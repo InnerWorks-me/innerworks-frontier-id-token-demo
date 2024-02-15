@@ -1,26 +1,30 @@
 "use client";
 
 import Head from "next/head";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { InnerworksAuth } from "@innerworks-me/iw-auth-sdk";
 
 export default function Home() {
-  const router = useRouter();
-
-  const [codeVerifier, setCodeVerifier] = useState(undefined);
   const [idToken, setIdToken] = useState("");
   const [walletData, setWalletData] = useState({});
 
+  const buttonContainerRef = useRef(null);
+
   const refreshToken = async (refreshToken) => {
+    console.log("refresh!");
     try {
-      const res = await fetch(`https://oauth2.googleapis.com/token`, {
+      const res = await fetch(`https://api.qa.innerworks.me/api/v1/innerworks/oauth/token`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
         },
-        body: `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${refreshToken}`,
+        body: JSON.stringify({
+          "projectId" : process.env.NEXT_PUBLIC_INNERWORKS_PROJECT_ID,
+          "grant_type" : "refresh_token",
+          "refresh_token" : refreshToken
+        }),
       });
 
       const data = await res.json();
@@ -33,6 +37,35 @@ export default function Home() {
       throw err;
     }
   };
+
+  // Set up innerworks sign in button
+  useEffect(() => {
+    if(process.env.NEXT_PUBLIC_INNERWORKS_PROJECT_ID && process.env.NEXT_PUBLIC_INNERWORKS_REDIRECT_URL) {
+      const iwAuth = new InnerworksAuth(
+        process.env.NEXT_PUBLIC_INNERWORKS_PROJECT_ID,
+        process.env.NEXT_PUBLIC_INNERWORKS_REDIRECT_URL
+      );
+      if(buttonContainerRef) {
+        const button = iwAuth.getInnerworksSignInButton();
+        buttonContainerRef.current.appendChild(button);
+      }
+    }
+  }, []);
+
+  // Set id token from url params
+  useEffect(() => {
+    let queryString = window.location.search;
+    let urlParams = new URLSearchParams(queryString);
+    const idParam = urlParams.get('id');
+    const refreshParam = urlParams.get('refresh');
+    if (idParam) {
+      setIdToken(idParam);
+      localStorage.setItem("id_token", idParam);
+    }
+    if (refreshParam) {
+      localStorage.setItem("refresh_token", refreshParam);
+    }
+  }, []);
 
   // Fetch ID token from local storage
   useEffect(() => {
@@ -55,46 +88,6 @@ export default function Home() {
       }
     })();
   }, []);
-
-  // Create the code verifier
-  useEffect(() => {
-    const codeVerifierFromSession = sessionStorage.getItem("code_verifier");
-
-    if (codeVerifierFromSession) {
-      setCodeVerifier(codeVerifierFromSession);
-      return;
-    }
-
-    const codeVerifierValue = Math.random().toString(36).slice(-8);
-
-    sessionStorage.setItem("code_verifier", codeVerifierValue);
-    setCodeVerifier(codeVerifierValue);
-  }, []);
-
-  // Exchange auth code for ID token
-  useEffect(() => {
-    (async () => {
-      if (router.isReady && router.query.code && !idToken) {
-        const code = router.query.code;
-
-        const params = new URLSearchParams();
-        params.append("code", code);
-        params.append("client_id", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
-        params.append("client_secret", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET);
-        params.append("redirect_uri", window.location.origin);
-        params.append("grant_type", "authorization_code");
-        params.append("code_verifier", codeVerifier);
-
-        const { data } = await axios.post("https://oauth2.googleapis.com/token", params);
-
-        router.replace("/", undefined, { shallow: true });
-
-        setIdToken(data.id_token);
-        localStorage.setItem("id_token", data.id_token);
-        localStorage.setItem("refresh_token", data.refresh_token);
-      }
-    })();
-  }, [router]);
 
   // Sample wallet API call
   useEffect(() => {
@@ -186,22 +179,7 @@ export default function Home() {
       ) : (
         <>
           <div>
-            <a
-              style={{
-                width: "300px",
-                margin: "100px auto",
-                display: "block",
-                fontSize: "24px",
-                padding: "12px 32px",
-                background: "#eee",
-                textAlign: "center",
-              }}
-              href={`https://accounts.google.com/o/oauth2/v2/auth?client_id=${
-                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-              }&redirect_uri=${
-                typeof window !== "undefined" ? window.location.origin : ""
-              }&response_type=code&scope=profile%20email&state=1234567890&access_type=offline&code_challenge=${codeVerifier}&code_challenge_method=plain&prompt=consent`}>
-              Sign in with Google
+            <a ref={buttonContainerRef}>
             </a>
           </div>
         </>
